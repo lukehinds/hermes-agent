@@ -18,6 +18,24 @@ DENIAL_RE = re.compile(
 PATH_RE = re.compile(r"(?:~/|/)[^\s\"'`,;:]+")
 AUDIT_LOG = Path.home() / ".hermes" / "logs" / "nono-sandbox-audit.ndjson"
 _ANNOUNCED: set[str] = set()
+_PENDING_DENIAL_CONTEXT: dict[str, str] = {}
+PROXY_ENV_NAMES = (
+    "HTTP_PROXY",
+    "HTTPS_PROXY",
+    "http_proxy",
+    "https_proxy",
+    "NO_PROXY",
+    "no_proxy",
+    "OPENAI_BASE_URL",
+    "ANTHROPIC_BASE_URL",
+    "GEMINI_BASE_URL",
+    "SSL_CERT_FILE",
+    "REQUESTS_CA_BUNDLE",
+    "NODE_EXTRA_CA_CERTS",
+    "CURL_CA_BUNDLE",
+    "GIT_SSL_CAINFO",
+    "NONO_PROXY_TOKEN",
+)
 
 
 def _session_key(args: tuple[Any, ...], kwargs: dict[str, Any]) -> str:
@@ -41,6 +59,23 @@ def _cap_file() -> Path | None:
 
 def _inside_nono() -> bool:
     return _cap_file() is not None
+
+
+def _redact_env_value(name: str, value: str) -> str:
+    if name == "NONO_PROXY_TOKEN":
+        return "set"
+    if name in {"HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy"}:
+        return re.sub(r"//[^/@]+@", "//<redacted>@", value)
+    return value
+
+
+def _proxy_status() -> dict[str, str]:
+    status = {}
+    for name in PROXY_ENV_NAMES:
+        value = os.environ.get(name)
+        if value:
+            status[name] = _redact_env_value(name, value)
+    return status
 
 
 def _load_capabilities(limit: int = 24) -> str:
@@ -182,6 +217,7 @@ def _nono_status(_params: dict[str, Any] | None = None, **_kwargs: Any) -> str:
         "inside_nono": _inside_nono(),
         "capability_file": str(_cap_file()) if _cap_file() else None,
         "capabilities": _load_capabilities(),
+        "proxy": _proxy_status(),
         "audit_log": str(AUDIT_LOG),
         "guidance": "Use nono why --path <path> --op <read|write|readwrite> for denied paths.",
     }
@@ -209,15 +245,23 @@ def _augment_tool_result(*args: Any, **kwargs: Any) -> str | None:
 def _audit_tool_call(*args: Any, **kwargs: Any) -> None:
     tool_name, tool_args, result, task_id = _tool_fields(args, kwargs)
     result_text = _stringify(result, max_chars=1000)
+    denied = bool(DENIAL_RE.search(result_text))
+    blocked_path = _extract_path(tool_args, result)
+    session_id = _session_key(args, kwargs)
     _audit(
         "tool_call",
-        session_id=_session_key(args, kwargs),
+        session_id=session_id,
         task_id=task_id,
         tool_name=tool_name,
-        denied=bool(DENIAL_RE.search(result_text)),
-        path=_extract_path(tool_args, result),
+        denied=denied,
+        path=blocked_path,
         duration_ms=kwargs.get("duration_ms"),
     )
+    if denied and _inside_nono():
+        _PENDING_DENIAL_CONTEXT[session_id] = _denial_context(
+            blocked_path,
+            _load_capabilities(),
+        )
 
 
 def _audit_approval_request(
@@ -273,12 +317,20 @@ def _inject_context(*args: Any, **kwargs: Any) -> dict[str, str] | None:
         return None
 
     key = _session_key(args, kwargs)
+    context_parts = []
     is_first_turn = bool(kwargs.get("is_first_turn"))
-    if not is_first_turn or key in _ANNOUNCED:
+    if is_first_turn and key not in _ANNOUNCED:
+        _ANNOUNCED.add(key)
+        context_parts.append(_startup_context())
+
+    denial_context = _PENDING_DENIAL_CONTEXT.pop(key, None)
+    if denial_context:
+        context_parts.append(denial_context)
+
+    if not context_parts:
         return None
 
-    _ANNOUNCED.add(key)
-    return {"context": _startup_context()}
+    return {"context": "\n\n".join(context_parts)}
 
 
 def _register_tool(ctx: Any, schema: dict[str, Any]) -> None:

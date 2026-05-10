@@ -6,8 +6,8 @@
     "description": "Hermes Agent CLI profile (registry-managed)",
     "author": "always-further"
   },
-  "security": {
-    "groups": [
+  "groups": {
+    "include": [
       "python_runtime",
       "node_runtime",
       "rust_runtime",
@@ -17,7 +17,9 @@
       "nix_runtime",
       "git_config",
       "unlink_protection"
-    ],
+    ]
+  },
+  "security": {
     "signal_mode": "isolated",
     "capability_elevation": false
   },
@@ -47,7 +49,7 @@
     "custom_credentials": {
       "openai": {
         "upstream": "https://api.openai.com/v1",
-        "credential_key": "env://OPENAI_API_KEY",
+        "credential_key": "openai_api_key",
         "inject_header": "Authorization",
         "credential_format": "Bearer {}",
         "env_var": "OPENAI_API_KEY",
@@ -70,7 +72,7 @@
       },
       "anthropic": {
         "upstream": "https://api.anthropic.com",
-        "credential_key": "env://ANTHROPIC_API_KEY",
+        "credential_key": "anthropic_api_key",
         "inject_header": "x-api-key",
         "credential_format": "{}",
         "env_var": "ANTHROPIC_API_KEY",
@@ -84,7 +86,7 @@
       },
       "gemini": {
         "upstream": "https://generativelanguage.googleapis.com",
-        "credential_key": "env://GEMINI_API_KEY",
+        "credential_key": "gemini_api_key",
         "inject_header": "x-goog-api-key",
         "credential_format": "{}",
         "env_var": "GEMINI_API_KEY",

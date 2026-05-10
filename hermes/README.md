@@ -13,9 +13,9 @@ If the pack is not already installed, nono will prompt to pull it.
 ## What's in the pack
 
 - **`policy.json`** — sandbox profile loaded as `--profile hermes`. Grants Hermes state under `~/.hermes`, nono user profile writes under `~/.config/nono/profiles`, read-only package metadata under `~/.config/nono/packages`, the Hermes launcher directory, uv-managed Python runtimes under `~/.local/share/uv`, and read-only access to nono audit history.
-- **`policy.json` network controls** — activates the nono `enterprise` network profile, provider credential routes, and L7 endpoint rules for OpenAI, Anthropic, and Gemini routes.
-- **`plugin/nono-sandbox/`** — Hermes plugin. It registers a `nono_status` tool, `/nono-status` slash command, plugin-provenanced `nono-sandbox:nono-sandbox` skill, first-turn sandbox boundary context, denial remediation context, and metadata-only audit events under `~/.hermes/logs/nono-sandbox-audit.ndjson`.
-- **`bin/nono-hermes-status.sh`** — small diagnostic script for checking Hermes, nono, current capabilities, and sensitive Hermes file permissions.
+- **`policy.json` network controls** — activates the nono `enterprise` network profile, provider credential routes, and L7 endpoint rules for OpenAI, Anthropic, and Gemini routes. Requires nono v0.51+ so those controls also apply to TLS CONNECT traffic through nono's interception path.
+- **`plugin/nono-sandbox/`** — Hermes plugin. It registers a `nono_status` tool, `/nono-status` slash command, plugin-provenanced `nono-sandbox:nono-sandbox` skill, first-turn sandbox boundary context, redacted proxy/TLS trust context, denial remediation context, and metadata-only audit events under `~/.hermes/logs/nono-sandbox-audit.ndjson`.
+- **`bin/nono-hermes-status.sh`** — small diagnostic script for checking Hermes, nono, current capabilities, proxy/TLS trust state, audit history, and sensitive Hermes file permissions.
 - **`templates/config-hardening.yaml`** — YAML merge patch for enabling the plugin, fail-closed Tirith scanning, secret redaction, private URL blocking, and Hermes skill-write guarding.
 
 ## Activating the plugin
@@ -46,17 +46,18 @@ The plugin also exposes `/nono-status` and the `nono_status` tool after Hermes r
 
 The `hermes` nono profile starts Hermes behind nono's proxy-only network mode unless you override it with `--allow-net`. The profile allows the `enterprise` network set and requests credential routes for `openai`, `anthropic`, `gemini`, `github`, and `gitlab`.
 
-For provider routes, nono injects a session-scoped phantom token into Hermes and swaps it for the real credential in the proxy. Configure the backing credentials in nono before relying on this path:
+For provider routes, nono injects a session-scoped phantom token into Hermes and swaps it for the real credential in the proxy. The profile uses these nono credential account names:
 
-```bash
-export OPENAI_API_KEY=...
-export ANTHROPIC_API_KEY=...
-export GEMINI_API_KEY=...
-export GITHUB_TOKEN=...
-export GITLAB_TOKEN=...
-```
+- `openai_api_key` -> `OPENAI_API_KEY`
+- `anthropic_api_key` -> `ANTHROPIC_API_KEY`
+- `gemini_api_key` -> `GEMINI_API_KEY`
+- built-in `github` and `gitlab` routes when their backing credentials are available
 
 The OpenAI, Anthropic, and Gemini routes include method+path allowlists so model calls can proceed without opening arbitrary API endpoints.
+
+With nono v0.51 or newer, those routes also cover normal HTTPS SDK traffic that uses `CONNECT` through the nono proxy. When a route has credentials or endpoint rules, nono creates a session-scoped interception CA under `~/.nono/sessions/...`, injects the relevant trust environment variables (`SSL_CERT_FILE`, `REQUESTS_CA_BUNDLE`, `NODE_EXTRA_CA_CERTS`, `CURL_CA_BUNDLE`, and `GIT_SSL_CAINFO`), terminates the eligible TLS tunnel, and applies the same L7 filtering and credential injection inside the proxy. If TLS interception cannot be prepared, nono blocks L7-bearing CONNECT routes instead of allowing a bypass.
+
+The status helper redacts proxy URL userinfo because v0.51 proxy URLs can contain the session proxy token.
 
 ## Research notes
 
