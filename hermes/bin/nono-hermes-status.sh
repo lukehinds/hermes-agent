@@ -55,14 +55,6 @@ for name in HTTP_PROXY HTTPS_PROXY http_proxy https_proxy NO_PROXY no_proxy OPEN
 done
 
 echo
-echo "nono audit:"
-if command -v nono >/dev/null 2>&1; then
-  nono audit list --today 2>/dev/null | sed -n '1,12p' || echo "  audit list unavailable"
-else
-  echo "  nono: not found on PATH"
-fi
-
-echo
 echo "Hermes security files:"
 for path in "$HOME/.hermes/.env" "$HOME/.hermes/config.yaml"; do
   if [ -e "$path" ]; then

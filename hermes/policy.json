@@ -31,9 +31,7 @@
     "read": [
       "$HOME/.local/bin",
       "$HOME/.local/share/uv",
-      "$HOME/.config/nono/packages",
-      "$HOME/.nono/audit",
-      "$HOME/.nono/rollbacks"
+      "$HOME/.config/nono/packages"
     ]
   },
   "network": {

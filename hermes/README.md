@@ -12,10 +12,10 @@ If the pack is not already installed, nono will prompt to pull it.
 
 ## What's in the pack
 
-- **`policy.json`** — sandbox profile loaded as `--profile hermes`. Grants Hermes state under `~/.hermes`, nono user profile writes under `~/.config/nono/profiles`, read-only package metadata under `~/.config/nono/packages`, the Hermes launcher directory, uv-managed Python runtimes under `~/.local/share/uv`, and read-only access to nono audit history.
+- **`policy.json`** — sandbox profile loaded as `--profile hermes`. Grants Hermes state under `~/.hermes`, nono user profile writes under `~/.config/nono/profiles`, read-only package metadata under `~/.config/nono/packages`, the Hermes launcher directory, and uv-managed Python runtimes under `~/.local/share/uv`. It does not grant access to nono's own audit or rollback state.
 - **`policy.json` network controls** — activates the nono `enterprise` network profile, provider credential routes, and L7 endpoint rules for OpenAI, Anthropic, and Gemini routes. Requires nono v0.51+ so those controls also apply to TLS CONNECT traffic through nono's interception path.
 - **`plugin/nono-sandbox/`** — Hermes plugin. It registers a `nono_status` tool, `/nono-status` slash command, plugin-provenanced `nono-sandbox:nono-sandbox` skill, first-turn sandbox boundary context, redacted proxy/TLS trust context, denial remediation context, and metadata-only audit events under `~/.hermes/logs/nono-sandbox-audit.ndjson`.
-- **`bin/nono-hermes-status.sh`** — small diagnostic script for checking Hermes, nono, current capabilities, proxy/TLS trust state, audit history, and sensitive Hermes file permissions.
+- **`bin/nono-hermes-status.sh`** — small diagnostic script for checking Hermes, nono, current capabilities, proxy/TLS trust state, and sensitive Hermes file permissions.
 - **`templates/config-hardening.yaml`** — YAML merge patch for enabling the plugin, fail-closed Tirith scanning, secret redaction, private URL blocking, and Hermes skill-write guarding.
 
 ## Activating the plugin
