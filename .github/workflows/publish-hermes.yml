@@ -1,7 +1,7 @@
 name: Publish hermes pack
 on:
   push:
-    tags: ["hermes-v*"]
+    tags: ["*"]
   workflow_dispatch:
 
 # Inlined (rather than calling a reusable _publish.yml) so the OIDC
@@ -43,5 +43,5 @@ jobs:
           package-namespace: always-further
           package-version: ${{ github.ref_name }}
           package-path: hermes
-          registry-url: https://registry.nono.sh/api/v1
+          registry-url: https://lukehinds.rat.alwaysfurther.us/api/v1
           files: ${{ steps.files.outputs.files }}
