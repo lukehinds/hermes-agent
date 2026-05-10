@@ -40,7 +40,7 @@ jobs:
         with:
           publish: "true"
           package-name: hermes
-          package-namespace: always-further
+          package-namespace: lukehinds
           package-version: ${{ github.ref_name }}
           package-path: hermes
           registry-url: https://lukehinds.rat.alwaysfurther.us/api/v1
