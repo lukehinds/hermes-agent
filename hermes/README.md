@@ -12,7 +12,7 @@ If the pack is not already installed, nono will prompt to pull it.
 
 ## What's in the pack
 
-- **`policy.json`** — sandbox profile loaded as `--profile hermes`. Grants Hermes state under `~/.hermes`, nono user profile writes under `~/.config/nono/profiles`, read-only package metadata under `~/.config/nono/packages`, the Hermes launcher directory, and uv-managed Python runtimes under `~/.local/share/uv`. It does not grant access to nono's own audit or rollback state.
+- **`policy.json`** — sandbox profile loaded as `--profile hermes`. Grants Hermes state under `~/.hermes`, nono profile draft writes under `~/.config/nono/profile-drafts`, read-only package metadata under `~/.config/nono/packages`, the Hermes launcher directory, and uv-managed Python runtimes under `~/.local/share/uv`. It does not grant write access to active nono profiles, nono's own audit state, or rollback state.
 - **`policy.json` network controls** — ships reusable provider credential route definitions for OpenAI, Anthropic, Gemini, GitHub, and GitLab, but enables none by default. Users opt into the routes they need from an extending profile. Requires nono v0.51+ so enabled routes also apply to TLS CONNECT traffic through nono's interception path.
 - **`plugin/nono-sandbox/`** — Hermes plugin. It registers a `nono_status` tool, `/nono-status` slash command, plugin-provenanced `nono-sandbox:nono-sandbox` skill, first-turn sandbox boundary context, redacted proxy/TLS trust context, denial remediation context, and metadata-only audit events under `~/.hermes/logs/nono-sandbox-audit.ndjson`.
 - **`bin/nono-hermes-status.sh`** — small diagnostic script for checking Hermes, nono, current capabilities, proxy/TLS trust state, and sensitive Hermes file permissions.
@@ -20,7 +20,7 @@ If the pack is not already installed, nono will prompt to pull it.
 
 ## Activating the plugin
 
-`nono pull lukehinds/hermes` symlinks the plugin into:
+`nono pull always-further/hermes` symlinks the plugin into:
 
 ```text
 ~/.hermes/plugins/nono-sandbox
@@ -59,9 +59,10 @@ The base `hermes` profile does not enable provider credentials by default. This 
 Create your own profile that extends `hermes`:
 
 ```bash
-nono pull lukehinds/hermes
-nono profile init hermes-agent --extends hermes --full --force
-$EDITOR ~/.config/nono/profiles/hermes-agent.json
+nono pull always-further/hermes
+nono profile init hermes-agent --extends hermes --full --force \
+  --output ~/.config/nono/profile-drafts/hermes-agent.json
+$EDITOR ~/.config/nono/profile-drafts/hermes-agent.json
 ```
 
 Then set only the credential routes you need:
@@ -78,6 +79,19 @@ Then set only the credential routes you need:
 ```
 
 The empty `custom_credentials` object in the child profile is fine: child profiles inherit the route definitions from `hermes`. Do not remove `custom_credentials` from the base pack profile if you rely on its route definitions.
+
+Replace the generated `network` block as a whole, especially if the child profile was created from an older Hermes pack. Do not keep stale entries such as `network_profile: "enterprise"`, `credentials: ["openai", "anthropic", "gemini", "github", "gitlab"]`, or a child `custom_credentials.gemini` block. Child `custom_credentials` entries override the inherited route templates.
+
+If you see a warning like `Credential 'GEMINI_API_KEY' not found for route 'gemini'`, your active child profile is not using the current Hermes route template. The Gemini route in this pack uses `GOOGLE_API_KEY`.
+
+Validate and promote the draft yourself:
+
+```bash
+nono profile validate --draft hermes-agent
+nono profile promote hermes-agent
+```
+
+The sandboxed agent can draft profile changes, but it cannot directly edit active profiles under `~/.config/nono/profiles`. This keeps policy changes behind an explicit user promotion step.
 
 Common route names:
 
@@ -158,6 +172,6 @@ The pack maps directly to Hermes security features:
 
 ## Source
 
-`https://github.com/lukehinds/nono-packs/tree/main/hermes`
+`https://github.com/always-further/nono-packs/tree/main/hermes`
 
 Published via Sigstore-signed releases triggered by tags matching `hermes-v*`.

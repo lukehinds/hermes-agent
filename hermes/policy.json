@@ -4,7 +4,7 @@
     "name": "hermes",
     "version": "1.0.0",
     "description": "Hermes Agent CLI profile (registry-managed)",
-    "author": "lukehinds"
+    "author": "always-further"
   },
   "groups": {
     "include": [
@@ -26,7 +26,7 @@
   "filesystem": {
     "allow": [
       "$HOME/.hermes",
-      "$HOME/.config/nono/profiles"
+      "$HOME/.config/nono/profile-drafts"
     ],
     "read": [
       "$HOME/.local/bin",

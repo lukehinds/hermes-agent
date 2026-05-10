@@ -195,7 +195,8 @@ Next steps for the assistant:
    A. One-off restart:
       {allow}
    B. Persistent profile:
-      create or extend ~/.config/nono/profiles/<name>.json with the minimum filesystem grant.
+      create or extend ~/.config/nono/profile-drafts/<name>.json with the minimum filesystem grant.
+      The user must review and apply it with `nono profile promote <name>`.
 4. Use read/read_file for view-only access and allow/allow_file only when writes are needed.
 """
 
@@ -208,7 +209,7 @@ This Hermes session is running inside nono. Filesystem and network access are en
 If a tool fails with "Operation not permitted", "Permission denied", EACCES, EPERM, "landlock", or "sandbox denied", diagnose the live sandbox with:
   nono why --self --path <path> --op read
 
-Then offer either a one-off restart with an explicit nono grant or a persistent profile change under ~/.config/nono/profiles/.
+Then offer either a one-off restart with an explicit nono grant or a persistent profile draft under ~/.config/nono/profile-drafts/. The user must review and apply drafts with `nono profile promote <name>`.
 """
 
 

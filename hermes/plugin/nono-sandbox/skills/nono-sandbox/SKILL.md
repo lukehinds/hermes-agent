@@ -17,7 +17,7 @@ Hermes cannot expand nono access from inside the session. YOLO mode, `/yolo`, `a
 
 ## Provenance
 
-This skill is bundled by the `nono-sandbox` Hermes plugin from the signed `lukehinds/hermes` nono pack. Load it explicitly as `skill_view("nono-sandbox:nono-sandbox")` when provenance matters.
+This skill is bundled by the `nono-sandbox` Hermes plugin from the signed `always-further/hermes` nono pack. Load it explicitly as `skill_view("nono-sandbox:nono-sandbox")` when provenance matters.
 
 ## When to use this skill
 
@@ -67,9 +67,9 @@ nono run --profile hermes --allow /path/to/needed -- hermes
 
 Use `--read` instead of `--allow` when Hermes only needs view access.
 
-### Option B: persistent profile
+### Option B: profile draft
 
-Create a user profile under `~/.config/nono/profiles/<name>.json`:
+Create a profile draft under `~/.config/nono/profile-drafts/<name>.json`:
 
 ```json
 {
@@ -79,6 +79,15 @@ Create a user profile under `~/.config/nono/profiles/<name>.json`:
     "read": ["/path/to/needed"]
   }
 }
+```
+
+Do not write directly to `~/.config/nono/profiles` from inside the sandbox. Active profiles control future sandbox policy and must stay behind a user review step.
+
+The user reviews and promotes the draft outside the sandbox:
+
+```bash
+nono profile validate --draft hermes-extra
+nono profile promote hermes-extra
 ```
 
 Start future sessions with:
